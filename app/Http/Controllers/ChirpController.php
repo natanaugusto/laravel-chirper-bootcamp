@@ -8,56 +8,47 @@ use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 
 use Inertia\Inertia;
+use Inertia\Response as InertiaResponse;
 
 class ChirpController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index(): \Inertia\Response
+    public function index(): InertiaResponse
     {
         return Inertia::render(component:'Chirps/Index', props:[
             'chirps' => Chirp::with(relations:'user:id,name')->latest()->get(),
         ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
     public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
+        $validated = $request->validate(rules:[
             'message' => 'required|string|max:255',
         ]);
 
         $request->user()->chirps()->create($validated);
 
-        return redirect(route('chirps.index'));
+        return redirect(to:route(name:'chirps.index'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Chirp  $chirp
-     * @return \Illuminate\Http\Response
-     */
     public function update(Request $request, Chirp $chirp): RedirectResponse
     {
-        //
-        $this->authorize('update', $chirp);
+        $this->authorize(ability:'update', arguments:$chirp);
 
-        $validated = $request->validate([
+        $validated = $request->validate(rules:[
             'message' => 'required|string|max:255',
         ]);
 
-        $chirp->update($validated);
+        $chirp->update(attributes:$validated);
 
-        return redirect(route('chirps.index'));
+        return redirect(to:route(name:'chirps.index'));
+    }
+
+    public function destroy(Chirp $chirp): RedirectResponse
+    {
+        $this->authorize(ability:'delete', arguments:$chirp);
+
+        $chirp->delete();
+
+        return redirect(to:route(name:'chirps.index'));
     }
 }
